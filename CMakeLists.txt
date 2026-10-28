@@ -20,6 +20,7 @@ add_executable(vita_ps5_livearea
     src/theme_patch.c
     src/theme_runtime.c
     src/theme_profile.c
+    src/theme_profile_loader.c
     src/runtime_config.c
     src/asset_loader.c
     src/compat.c
