@@ -1,61 +1,134 @@
 # vita-ps5-livearea
 
-PS Vita LiveArea UI project inspired by PS5 design language. This is a research-oriented, firmware-aware plugin project built as a separate initiative from `livearea_nolimits`.
+PS Vita LiveArea UI project inspired by PS5 design, built as a separate experimental project based on the architecture and compatibility approach used by `livearea_nolimits`.
 
-## Reference source
+## О проекте
 
-This project uses the `livearea_nolimits` release as a technical baseline for Vita shell patching and firmware validation patterns:
+Этот репозиторий — отдельный проект для исследования и разработки кастомного визуального оформления LiveArea для PlayStation Vita в духе PS5. Он не является форком или продолжением `livearea_nolimits`, а представляет собой отдельную ветку разработки: не расширение лимитов LiveArea, а создание безопасного, firmware-aware слоя визуального оформления интерфейса.
+
+## Почему отдельный проект
+
+`livearea_nolimits` — это проект, решающий другую задачу:
+- увеличение количества LiveArea страниц
+- увеличение количества иконок
+- управление кэшированием иконок
+- патчинг `SceShell` под конкретные прошивки
+
+Наш проект решает другую задачу:
+- создание PS5-подобной визуальной темы для LiveArea
+- управление стилем и цветовой схемой
+- загрузка профиля темы и ассетов
+- безопасная валидация прошивки перед применением темы
+- откат к стандартному интерфейсу при несовместимости
+
+## Ссылка на reference
+
+В качестве технического эталона по архитектуре безопасной совместимости и валидации профилей использован проект:
 
 - https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
 
-## Goal
+Важно: этот проект не дублирует функциональность `livearea_nolimits`, а использует его подход к проверке прошивки, модулей и уровню безопасности как основу для кастомного UI-проекта.
 
-Create a PS5-inspired design layer for the PS Vita LiveArea while preserving system stability, enabling safe fallback, and keeping the project firmware-aware.
+## Цель проекта
 
-## Scope
+Создать PS5-inspired визуальное оформление для LiveArea PS Vita, сохранив:
+- стабильность работы интерфейса
+- безопасный fallback в стандартный UI
+- поддержку поиска и валидации совместимых firmware profile
+- разделение стиля, ассетов и логики патчей
 
-This repository is a full project package for the design and engineering of a custom Vita LiveArea theme. It contains:
-- project charter and engineering scope
-- runtime architecture
-- shell patching API
-- design specification
-- reverse-engineering checklist
-- compatibility profile model
-- validation matrix
-- asset specification
-- build and test playbook
+## Текущее состояние
 
-## Distinction from livearea_nolimits
+На данный момент репозиторий находится в стадии инженерного каркаса и проектной архитектуры. В нём уже есть:
+- базовый скелет Vita module
+- runtime-конфигурация темы
+- модель профиля темы
+- валидация metadata и palette
+- логика fallback в стандартный LiveArea
+- модель совместимости по firmware
+- документация по дизайну и архитектуре
 
-`livearea_nolimits` solves shell-capacity expansion and icon caching. This project is intentionally different:
-- not a capacity patch project
-- not a general-purpose shell rewrite
-- focused on visual styling and theme injection
-- designed around firmware-specific hook validation and safe fallback
+Данный проект ещё не является готовой рабочей темой для всех прошивок Vita. Он представляет собой безопасную основу для дальнейшей разработки.
 
-## Repository structure
+## Архитектура проекта
 
-- `src/` – runtime and patching implementation stubs
-- `include/` – public headers and module interfaces
-- `docs/` – engineering and design package
-- `assets/` – resource directories and placeholders
-- `tests/` – validation and smoke test scripts
-- `CMakeLists.txt` – Vita build system
-- `vita_ps5_livearea.yml` – module metadata
+- `src/` — исходный код runtime и логики темы
+- `include/` — заголовки и API интерфейсы
+- `assets/` — ассеты, палитры, metadata пакета темы
+- `profiles/` — профили визуальных тем
+- `docs/` — документы по архитектуре, дизайну и валидации
+- `tests/` — скрипты валидации профилей и metadata
+- `CMakeLists.txt` — сборка проекта под VitaSDK
+- `vita_ps5_livearea.yml` — модульные метаданные
 
-## Current status
+## Архитектурный принцип
 
-The repo is at the project-package stage: architecture, safety rules, design system, validation matrix, and reverse-engineering plan are documented and scaffolded. It is not yet a production UI theme.
+Вся логика построена по модели "fail closed":
 
-## High-level roadmap
+1. определить активную прошивку
+2. проверить идентичность модуля `SceShell`
+3. выбрать compatible firmware profile
+4. загрузить profile темы
+5. проверить metadata, палитру и ассеты
+6. применять кастомный стиль только при успешной валидации
+7. если что-то не прошло — включить стандартный LiveArea
 
-1. Confirm shell rendering points in `SceShell`
-2. Define safe hook and fallback strategy
-3. Add runtime theme state and compatibility logic
-4. Build asset pipeline and PS5-inspired design system
-5. Validate on a narrow firmware subset
-6. Expand only after stable behavior is proven
+Это критически важно, потому что UI shell на Vita зависит от конкретной прошивки и модульной структуры, и неправильный патч может нарушить работу интерфейса.
 
-## Important note
+## Направление дизайна
 
-Because LiveArea rendering is firmware-specific, all theme work must be reversible and safely fallback to stock UI when compatibility cannot be confirmed.
+Стиль вдохновлён PS5, но адаптирован под ограничения Vita:
+
+- тёмная базовая палитра
+- цианово-синий акцент
+- эффект стекла / layered panels
+- высокая читаемость текста
+- слабый glow, не перегружающий интерфейс
+- ясный selected state для иконок и элементов
+- плавные, легкие motion-эффекты без перегрузки системы
+
+## Поддерживаемые firmware
+
+В текущей модели проект ориентируется на семейства прошивок, которые уже были использованы в исследовании `livearea_nolimits`:
+
+- Retail PS Vita / PSTV: 3.60–3.74
+- Testkit: 3.60, 3.61, 3.63, 3.65, 3.67, 3.68, 3.70, 3.72, 3.73
+- Devkit: 3.60, 3.61, 3.63, 3.65, 3.67, 3.68, 3.69, 3.70, 3.71, 3.73
+
+На старте проект будет проверяться на узком наборе прошивок, а только потом расширяться.
+
+## Сборка
+
+Для сборки требуется VitaSDK и CMake.
+
+```sh
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Результат сборки:
+
+```text
+build/vita_ps5_livearea.suprx
+```
+
+## Важное замечание
+
+Это проект исследовательского характера. Он не обещает готовый PS5 UI для всех прошивок сразу. Реальный визуальный патч должен быть подтверждён на конкретной прошивке, и в любой момент должен быть безопасно отключён в пользу стандартного LiveArea.
+
+## Roadmap
+
+1. Проверить и подтвердить `SceShell`-маршруты LiveArea
+2. Найти безопасные точки рендера и хуки
+3. Валидировать совместимость по firmware profile
+4. Загрузить активный theme profile
+5. Проверить metadata и ассеты
+6. Подключить визуальные override только после успешной валидации
+7. Расширять поддержку только на протестированных профилях
+
+## Итог
+
+Этот проект — безопасная, firmware-aware основа для создания PS5-inspired LiveArea для PS Vita. Он использует подходы, проверенные в `livearea_nolimits`, но направлен не на расширение лимитов, а на безопасное и reversible визуальное оформление интерфейса.
+
+Если цель — сделать именно кастомный LiveArea в PS5-стиле, этот репозиторий — правильная точка старта.
