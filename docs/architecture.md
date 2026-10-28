@@ -1,108 +1,69 @@
-# Architecture overview
+# Architecture and runtime model
 
-## Goal
+## Goals
 
-Define a clean runtime and patching architecture for a PS5-inspired LiveArea UI project. The goal is to keep the code modular, firmware-aware, and safe to disable when unsupported.
+The runtime architecture must separate:
+- firmware compatibility logic
+- theme state and UI style
+- asset loading
+- shell patch management
+- fallback behavior
 
-## Core architectural principles
+## Core components
 
-### 1. Separate UI design from shell patching
+### 1. Compatibility manager
 
-The project should separate:
-- theme state and runtime configuration
-- patch injection logic
-- asset resource loading
-- firmware compatibility checks
+Responsibilities:
+- determine the active firmware profile
+- recognize module IDs and text segment sizes
+- verify that patch locations are valid
+- reject unsupported builds cleanly
 
-This keeps the shell work from becoming a monolithic code path.
+### 2. Theme runtime
 
-### 2. Safe fallback by default
+Responsibilities:
+- hold current theme state
+- define active style: default, neon, glass
+- hold toggles for dynamic background, custom icons, focus ring, etc.
+- expose runtime values to render code
 
-If the shell module layout differs from the expected profile, the plugin must fail gracefully and leave the system on stock LiveArea. The design should prefer stability over aggressive patching.
+### 3. Asset loader
 
-### 3. Firmware profile selection
+Responsibilities:
+- load custom backgrounds, overlays, masks, and texture metadata
+- validate required assets before activation
+- fall back to stock resources when missing
 
-The project should support a profile system similar to `livearea_nolimits`:
-- module NID identification
-- text size validation
-- offset validation
-- patch compatibility check
-- rollback on mismatch
+### 4. Shell patch manager
 
-### 4. Theme layers
+Responsibilities:
+- validate a patch target before injection
+- keep patch injection reversible
+- release patches on shutdown or failure
+- provide a minimal fail-safe path to stock UI
 
-The visual system should be split into clear layers:
+### 5. Theme render layer
 
-- base background layer
-- panel / glass layer
-- icon state layer
-- focus / hover layer
-- accent / glow layer
-- text layer
-
-This makes it easier to create a PS5-inspired look without hard-coding everything into a single patch.
-
-## Layered runtime model
-
-### Theme runtime
-Responsible for:
-- active style selection
-- enabled/disabled state
-- neon/glass toggle
-- dynamic background mode
-- icon recoloring settings
-- UI scale and focus behavior
-
-### Asset loader
-Responsible for:
-- loading custom texture packs
-- loading UI colors and style metadata
-- validating asset presence
-- falling back to stock resources when missing
-
-### Patch manager
-Responsible for:
-- locating target module and segment
-- validating patches before injection
-- applying visual hooks
-- releasing patches on shutdown
-
-### Compatibility manager
-Responsible for:
-- mapping target firmware profile
-- checking module signatures and segment layout
-- selecting supported style variants
-- disabling custom rendering on unsupported profiles
+Responsibilities:
+- compose the custom UI on top of LiveArea
+- apply PS5-inspired colors and backgrounds
+- adapt to focus state and icon selection
+- leave the underlying shell layout intact unless a safe hook is confirmed
 
 ## Lifecycle
 
-1. Module loads
-2. Theme runtime initializes to safe defaults
-3. Compatibility manager resolves firmware profile
-4. Asset loader loads custom pack if valid
-5. Patch manager verifies and injects rendering hooks
-6. LiveArea continues with theme overlay active
-7. Module stop releases overrides and goes back to stock rendering
+1. Module start
+2. Runtime initialization with default safe settings
+3. Firmware profile detection
+4. Asset pack validation
+5. Patch verification and hook activation
+6. LiveArea custom theme active
+7. Module stop releases all theme resources and hooks
 
-## Recommended file structure
+## Safety rules
 
-- `src/main.c` – module entry
-- `src/theme_runtime.c` – runtime state
-- `src/theme_patch.c` – patch logic
-- `src/asset_loader.c` – asset pipeline
-- `src/compat.c` – firmware validation layer
-- `include/theme_runtime.h` – runtime API
-- `include/theme_patch.h` – patch API
-- `include/compat.h` – compatibility API
-
-## Runtime safety rules
-
-- never patch before checking module identity
-- never inject if the segment size differs from expected
-- support a stock-fallback branch for every patch stage
-- keep unload cleanup explicit and deterministic
-- log incompatibility with a clear fail-safe mode
-
-## Final principle
-
-The project should behave like a visual skin layer, not a low-level shell rewrite. If compatibility cannot be proven, it should gracefully revert to the stock Vita interface.
+- if compatibility is unproven, default to stock UI
+- patch only after validation succeeds
+- never assume one firmware profile works for all builds
+- keep fallback code active at all times
+- log incompatibility and disable theme cleanly
