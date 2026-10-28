@@ -28,6 +28,9 @@ add_executable(vita_ps5_livearea
     src/firmware_profile.c
     src/theme_loader.c
     src/fallback.c
+    src/override_guard.c
+    src/debug_log.c
+    src/livearea_hook_guard.c
     src/patch_bytes.S
 )
 
