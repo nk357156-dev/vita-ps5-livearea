@@ -1,0 +1,29 @@
+{
+  "theme_name": "vita-ps5-livearea",
+  "version": "0.2.0",
+  "style": "neon-glass",
+  "fallback_mode": "stock-livearea",
+  "fallback_enabled": true,
+  "requires_background": true,
+  "requires_overlays": true,
+  "requires_icons": true,
+  "requires_labels": true,
+  "supported_firmware": [
+    "3.60",
+    "3.65",
+    "3.73"
+  ],
+  "palette": {
+    "bg_base": "0x090B12",
+    "bg_surface": "0x121821",
+    "panel": "0x181F2B",
+    "panel_frost": "0x1E2A3A",
+    "accent_primary": "0x5BC0FF",
+    "accent_secondary": "0x7F9BFF",
+    "glow_cyan": "0x72E5FF",
+    "text_primary": "0xF5F7FB",
+    "text_secondary": "0xB7C2D9",
+    "success": "0x7BE0A0",
+    "warning": "0xFFCC66"
+  }
+}

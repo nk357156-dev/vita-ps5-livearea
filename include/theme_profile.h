@@ -6,11 +6,11 @@
 #define THEME_NAME_MAX 64
 #define THEME_STYLE_MAX 16
 
-#define THEME_PROFILE_DEFAULT 0
-#define THEME_PROFILE_NEON 1
-#define THEME_PROFILE_GLASS 2
+#define THEME_STYLE_DEFAULT "default"
+#define THEME_STYLE_NEON "neon"
+#define THEME_STYLE_GLASS "glass"
 
-#define THEME_PROFILE_VALID 1
+#define THEME_PROFILE_ENABLED 1
 #define THEME_PROFILE_DISABLED 0
 
 typedef struct ThemePalette {
@@ -42,5 +42,6 @@ typedef struct ThemeProfile {
 int theme_profile_init_default(ThemeProfile *profile);
 int theme_profile_set_style(ThemeProfile *profile, const char *style_name);
 int theme_profile_apply_palette(ThemeProfile *profile, const ThemePalette *palette);
+int theme_profile_validate(const ThemeProfile *profile);
 
 #endif // THEME_PROFILE_H
