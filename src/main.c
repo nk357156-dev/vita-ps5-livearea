@@ -1,11 +1,8 @@
 #include <psp2/kernel/modulemgr.h>
 #include <psp2/types.h>
-#include <stdint.h>
 
 #include "theme_runtime.h"
 #include "theme_profile_loader.h"
-#include "theme_profile.h"
-#include "runtime_config.h"
 #include "validation_runner.h"
 #include "firmware_profile.h"
 
@@ -54,7 +51,6 @@ int module_start(SceSize argc, const void *args)
 {
     ThemeRuntime runtime;
     ThemeProfile profile;
-    ThemeProfile selected_profile;
     ValidationResult result;
     const FirmwareProfile *matched = NULL;
     uint32_t fake_module_nid = 0x0552F692u;
@@ -70,8 +66,6 @@ int module_start(SceSize argc, const void *args)
         return SCE_KERNEL_START_SUCCESS;
     }
 
-    selected_profile = profile;
-
     if (firmware_profile_match(g_profiles, THEME_PROFILE_COUNT, fake_module_nid, &matched) != 0) {
         theme_runtime_enable_fallback(&runtime);
         return SCE_KERNEL_START_SUCCESS;
@@ -82,7 +76,7 @@ int module_start(SceSize argc, const void *args)
         return SCE_KERNEL_START_SUCCESS;
     }
 
-    if (theme_runtime_apply_profile(&runtime, &selected_profile) != 0) {
+    if (theme_runtime_apply_profile(&runtime, &profile) != 0) {
         theme_runtime_enable_fallback(&runtime);
         return SCE_KERNEL_START_SUCCESS;
     }

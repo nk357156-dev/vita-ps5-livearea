@@ -1,8 +1,6 @@
 #ifndef ASSET_PACK_METADATA_H
 #define ASSET_PACK_METADATA_H
 
-#include <stdint.h>
-
 #define ASSET_PACK_NAME_MAX 64
 #define ASSET_PACK_VERSION_MAX 32
 #define ASSET_PACK_STYLE_MAX 24

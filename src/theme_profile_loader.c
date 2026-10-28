@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void trim(char *s)
+static void trim_token(char *s)
 {
     size_t len;
     char *p;
@@ -17,6 +17,7 @@ static void trim(char *s)
 
     p = s;
     len = strlen(p);
+
     while (len > 0 && (p[len - 1] == ' ' || p[len - 1] == '\t' ||
                        p[len - 1] == '\n' || p[len - 1] == '\r' ||
                        p[len - 1] == '"' || p[len - 1] == ',' ||
@@ -118,8 +119,8 @@ int theme_profile_load_json(const char *path, ThemeProfile *profile)
         key = line;
         value = colon + 1;
 
-        trim(key);
-        trim(value);
+        trim_token(key);
+        trim_token(value);
 
         if (strcmp(key, "name") == 0) {
             snprintf(profile->name, sizeof(profile->name), "%s", value);
@@ -172,8 +173,11 @@ int theme_profile_load_json(const char *path, ThemeProfile *profile)
     fclose(fp);
     profile->palette = palette;
 
-    if (!found_name || !found_style || !found_enabled || !found_glass || !found_neon || !found_icons || !found_scale)
+    if (!found_name || !found_style || !found_enabled || !found_glass ||
+        !found_neon || !found_icons || !found_scale)
+    {
         return -1;
+    }
 
     if (theme_profile_validate(profile) != 0)
         return -1;
@@ -190,7 +194,7 @@ int theme_metadata_load_json(const char *path, AssetPackMetadata *metadata)
     int found_version = 0;
     int found_style = 0;
     int found_fallback = 0;
-    int found_enabled = 0;
+    int found_fallback_enabled = 0;
     int found_background = 0;
     int found_icons = 0;
     int found_labels = 0;
@@ -216,8 +220,8 @@ int theme_metadata_load_json(const char *path, AssetPackMetadata *metadata)
         key = line;
         value = colon + 1;
 
-        trim(key);
-        trim(value);
+        trim_token(key);
+        trim_token(value);
 
         if (strcmp(key, "theme_name") == 0) {
             snprintf(metadata->theme_name, sizeof(metadata->theme_name), "%s", value);
@@ -233,7 +237,7 @@ int theme_metadata_load_json(const char *path, AssetPackMetadata *metadata)
             found_fallback = 1;
         } else if (strcmp(key, "fallback_enabled") == 0) {
             metadata->fallback_enabled = (strcmp(value, "true") == 0) ? 1 : 0;
-            found_enabled = 1;
+            found_fallback_enabled = 1;
         } else if (strcmp(key, "requires_background") == 0) {
             metadata->requires_background = (strcmp(value, "true") == 0) ? 1 : 0;
             found_background = 1;
@@ -246,9 +250,10 @@ int theme_metadata_load_json(const char *path, AssetPackMetadata *metadata)
             metadata->requires_labels = (strcmp(value, "true") == 0) ? 1 : 0;
             found_labels = 1;
         } else if (strcmp(key, "supported_firmware") == 0) {
-            /* next values handled as array entries */
+            /* array handled by next entries */
         } else if (strlen(value) > 0 && firmware_count < ASSET_PACK_FIRMWARE_MAX) {
-            snprintf(metadata->supported_firmware[firmware_count], sizeof(metadata->supported_firmware[firmware_count]), "%s", value);
+            snprintf(metadata->supported_firmware[firmware_count],
+                     sizeof(metadata->supported_firmware[firmware_count]), "%s", value);
             firmware_count++;
         }
     }
@@ -256,8 +261,12 @@ int theme_metadata_load_json(const char *path, AssetPackMetadata *metadata)
     fclose(fp);
     metadata->supported_firmware_count = firmware_count;
 
-    if (!found_name || !found_version || !found_style || !found_fallback || !found_enabled || !found_background || !found_icons || !found_labels || metadata->supported_firmware_count <= 0)
+    if (!found_name || !found_version || !found_style || !found_fallback ||
+        !found_fallback_enabled || !found_background || !found_icons ||
+        !found_labels || metadata->supported_firmware_count <= 0)
+    {
         return -1;
+    }
 
     return 0;
 }
