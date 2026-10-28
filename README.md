@@ -1,93 +1,41 @@
-# vita-ps5-livearea
+# Матрица валидации
 
-PS Vita LiveArea UI project inspired by PS5 design, built as a separate experimental project based on the architecture and compatibility approach used by `livearea_nolimits`.
+## Приоритетный набор валидации
 
-## О проекте
+Первый проход должен охватывать небольшой и стабильный набор профилей прошивки:
 
-Этот репозиторий — отдельный проект для исследования и разработки кастомного визуального оформления LiveArea. Основная идея — не ломать системный UI, а строить safe runtime layer, которая верифицирует firmware, выбирает compatible profile, валидирует metadata, и только после этого допускает изменения в UI.
+- Retail PS Vita 3.60
+- Retail PS Vita 3.65
+- Retail PS Vita 3.73
+- PSTV 3.74 (если доступно)
 
-## Ссылка на reference
+## Вторичный набор валидации
 
-- https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
+После валидации первого стабильного пути рендера:
+- Retail PS Vita 3.61
+- Retail PS Vita 3.68
+- Devkit 3.70
+- Testkit 3.72
 
-Важно: этот проект не дублирует функциональность `livearea_nolimits`, а использует его подход к проверке прошивки, модульной совместимости и fail-closed runtime логике.
+## Проверки валидации
 
-## Серьёзный milestone: first real hook validation candidate
+Для каждого целевого профиля прошивки проверить:
+- идентификация модуля успешна
+- shell text segment соответствует ожидаемому размеру
+- patch injection принят
+- stock fallback присутствует
+- LiveArea продолжает загружаться после активации custom hook
+- список приложений и рендер папок остаются стабильными
+- поведение focus и selection иконок остаётся стабильным
 
-Первый целевой candidate для реальной верификации — это:
+## Критерии прохождения
 
-- `selected_icon_glow`
+Профиль прошивки проходит только если:
+- модуль загружается без падения
+- страница LiveArea рендерится без искажений или пропавших UI-элементов
+- plugin может отключаться чисто
+- путь fallback сохраняет stock appearance, когда тема не может быть применена
 
-Документ:
+## Обработка сбоев
 
-- `docs/selected_icon_glow_validation.md`
-
-Он описывает:
-
-- risk classification
-- acceptance criteria
-- validation flow
-- revert and fallback requirements
-- hard-blocked candidates
-- current status = `REVIEW`
-
-## Hook policy and safe review model
-
-Перед реальным patching проект использует policy layer и review matrix:
-
-- `include/livearea_hook_policy.h`
-- `src/livearea_hook_policy.c`
-- `docs/livearea_hook_policy.md`
-- `docs/livearea_hook_matrix.md`
-- `docs/hook_investigation.md`
-- `docs/candidate_validation_report.md`
-
-Это делает архитектуру проекта fail-closed, а не “сразу с patching”.
-
-## First candidate status
-
-`selected_icon_glow` currently remains in `REVIEW` state.
-
-It is selected because it is the best low-risk local candidate, but it still needs proof of:
-
-- firmware compatibility
-- local-scope safety
-- reversibility
-- fallback restoration
-- no leakage to adjacent elements
-
-This is the correct engineering posture before any actual UI override.
-
-## Hard-blocked candidates
-
-The following remain blocked until proven safe:
-
-- full_livearea_redraw
-- global_page_lifecycle_patch
-- global_layout_composition_patch
-- shared_shell_state_mutation
-
-## Fail-closed architecture
-
-Вся логика построена по модели "fail closed":
-
-1. определить активную прошивку
-2. проверить идентичность модуля `SceShell`
-3. выбрать compatible firmware profile
-4. загрузить profile темы
-5. проверить metadata, палитру и ассеты
-6. применять кастомный стиль только после успешной валидации
-7. если что-то не прошло — включить стандартный LiveArea
-
-## Итог
-
-На данном этапе проект уже имеет:
-
-- safe runtime bootstrap
-- firmware-aware validation flow
-- hook matrix
-- hook policy layer
-- a concrete first review candidate (`selected_icon_glow`)
-- a clear blocked pool for high-risk global state patches
-
-This is the correct serious engineering stage before actual LiveArea override.
+Любой сбой в указанных проверках должен немедленно вернуть stock UI и зафиксировать точную точку несовместимости.

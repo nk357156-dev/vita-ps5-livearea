@@ -1,58 +1,111 @@
-# Test protocol and validation
+# Отчёт по валидации выбранной подсветки иконки
 
-## Goal
+## Кандидат
 
-Define a safe test process for validating custom UI hooks without damaging the Vita shell.
+`selected_icon_glow`
 
-## Validation phases
+## Категория
 
-### Phase 1: static validation
-- verify module identity
-- check text segment size
-- confirm hook points are not out of range
-- validate patch metadata and fallback conditions
+Подсветка выбранного элемента / локальный слой акцента виджета
 
-### Phase 2: stock fallback validation
-- enable theme engine with fallback mode on
-- verify stock UI remains visible if theme injection is impossible
+## Задача
 
-### Phase 3: minimal visual activation
-- use one known-good firmware profile
-- enable only one UI component at a time
-- verify page rendering and icon selection
+Проверить, можно ли включить данный hook в рамках модели LiveArea с приоритетом безопасности, описанной в reference architecture:
 
-### Phase 4: extended validation
-- validate on a second firmware profile
-- compare crash-free behavior and layout stability
-- only then expand to additional hardware classes
+- https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
 
-## Test checklist
+Цель состоит не в том, чтобы вслепую патчить shell. Цель — доказать, что кандидат:
 
-Before each test:
-- [ ] confirm module is loaded
-- [ ] confirm stock UI is available as fallback
-- [ ] confirm logs are active
-- [ ] confirm custom asset pack exists
-- [ ] confirm no unsupported profile is active
+- локален для виджета или выбранного объекта
+- обратим без перезагрузки или сброса shell
+- изолирован от глобального состояния shell
+- безопасен при политике fallback
 
-During each test:
-- [ ] open LiveArea
-- [ ] navigate pages
-- [ ] open folders
-- [ ] focus and select icons
-- [ ] verify no visual corruption or crashes
+## Классификация риска
 
-Pass criteria:
-- no crash
-- no broken page composition
-- no missing app tiles
-- no invalid selection state
-- stock UI remains available if theme is disabled
+- Риск: low
+- Зависимость от прошивки: только локальный профиль виджета
+- Глобальное влияние на shell: не ожидается
+- Статус кандидата до валидации: `REVIEW`
 
-## Failure policy
+## Критерии принятия
 
-Any visual corruption, module crash, or render break should immediately:
-- disable visual hook
-- revert to stock UI
-- log the exact compatibility issue
-- stop expansion to other firmware profiles until fixed
+Кандидат может перейти из `REVIEW` в `ALLOWED` только при выполнении всех условий:
+
+- firmware_checked == 1
+- risk != high
+- reversible == 1
+- isolated == 1
+- safe == 1
+- fallback_active == 1
+
+Если какое-либо значение равно false, кандидат должен оставаться `BLOCKED`.
+
+## Таблица валидации
+
+| Проверка | Результат | Примечания |
+|-----------|----------|-----------|
+| firmware profile match | ожидание | подтвердить, что активный shell profile соответствует целевому объекту подсветки |
+| local render scope | ожидание | подтвердить, что он не затрагивает общие shell objects |
+| reversibility | ожидание | сохранить исходное состояние и проверить path восстановления |
+| isolation | ожидание | убедиться, что не затрагивается глобальное состояние страницы или layout |
+| safety under fallback | ожидание | включить fallback и подтвердить возврат stock state |
+| adjacent-item safety | ожидание | убедиться, что нет утечек артефактов в соседние элементы |
+| debug-only gate | ожидание | кандидат должен быть отключён, если флаг отладки явно не включён |
+
+## Требуемый поток проверки
+
+### 1. Валидация прошивки
+
+- загрузить активный профиль прошивки
+- проверить, соответствует ли текущая сборка shell ожидаемому локальному пути рендера
+- отклонить кандидат, если он зависит от неподдерживаемой сборки или общего глобального объекта
+
+### 2. Валидация локального диапазона
+
+- подтвердить, что подсветка применяется только к выбранному элементу
+- подтвердить, что не перезаписывается глобальный render object
+- подтвердить, что не требуется hook жизненного цикла страницы
+
+### 3. Валидация обратимости
+
+- сохранить исходный цвет, alpha, glow и состояние highlight
+- реализовать routine восстановления
+- проверить, что восстановление работает при срабатывании fallback без перезагрузки
+
+### 4. Валидация fallback
+
+- включить режим fallback во время проверки
+- подтвердить, что исходная стандартная подсветка возвращается
+- подтвердить, что не остаётся ghost state в выбранной иконке или соседних строках
+
+### 5. Валидация безопасности
+
+- тестировать через debug-only gate
+- убедиться, что соседние элементы не затронуты
+- убедиться, что нет утечек состояния в shared shell elements
+
+## Hard-blocked кандидаты
+
+Следующие кандидаты остаются явно заблокированными и не должны использоваться в проекте до доказательства безопасности:
+
+- full_livearea_redraw
+- global_page_lifecycle_patch
+- global_layout_composition_patch
+- shared_shell_state_mutation
+
+Они запрещены, потому что меняют глобальное или lifecycle-level состояние shell, а не локальную подсветку виджета.
+
+## Текущий вердикт
+
+`selected_icon_glow` в настоящее время находится в состоянии `REVIEW`, а не `ALLOWED`.
+
+Это правильный первый кандидат для review, потому что он изолирован и локален, но всё ещё требует доказательств:
+
+- совместимости с прошивкой
+- целостности локального диапазона
+- обратимости
+- восстановления fallback
+- отсутствия глобального артефакта
+
+До тех пор, пока эти проверки не пройдут, кандидат должен оставаться под review, а проект должен оставаться fail-closed.

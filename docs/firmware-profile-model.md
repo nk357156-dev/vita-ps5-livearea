@@ -1,46 +1,60 @@
-# Firmware profile model
+# Совместимость с прошивкой и целевые профили валидации
 
-## Goal
+## Начальная target-сборка
 
-Create a simple, firmware-aware model for selecting UI behavior without assuming all Vita builds behave identically.
+Этот проект начнётся с семейств прошивок, на которые ссылается `livearea_nolimits`, потому что они уже имеют валидированные patterns shell patching.
 
-## Profile model structure
+### Retail PS Vita / PSTV
+- 3.60
+- 3.61
+- 3.63
+- 3.65
+- 3.67
+- 3.68
+- 3.69
+- 3.70
+- 3.71
+- 3.72
+- 3.73
+- 3.74
 
-Each profile should include:
-- firmware version
-- hardware class (retail, PSTV, testkit, devkit)
-- module NID
-- expected text size
-- validation state
-- patch compatibility status
-- fallback enabled/disabled
+### Testkit
+- 3.60
+- 3.61
+- 3.63
+- 3.65
+- 3.67
+- 3.68
+- 3.70
+- 3.72
+- 3.73
 
-## Example model
+### Devkit
+- 3.60
+- 3.61
+- 3.63
+- 3.65
+- 3.67
+- 3.68
+- 3.69
+- 3.70
+- 3.71
+- 3.73
 
-```c
-typedef struct FirmwareProfile {
-    const char *name;
-    uint32_t firmware_version;
-    uint32_t module_nid;
-    uint32_t expected_text_size;
-    int supports_theme_engine;
-    int supports_custom_assets;
-    int requires_fallback;
-} FirmwareProfile;
-```
+## Рекомендуемый начальный subset валидации
 
-## Recommended profile order
+Для первого прохода мы должны валидировать минимальный набор:
+- retail 3.60
+- retail 3.65
+- retail 3.73
+- PSTV 3.74 (если доступно)
 
-Use this order when testing:
-1. retail 3.60
-2. retail 3.65
-3. retail 3.73
-4. PSTV 3.74 if available
-5. devkit/testkit profiles later
+Это создаёт стабильную базу, пока layer patching UI всё ещё экспериментален.
 
-## Rules
+## Правила валидации
 
-- one unsupported profile should not block all others
-- a single known-good profile is enough as a baseline milestone
-- unsupported profiles use stock theme rendering only
-- keep the model explicit and easy to expand
+- хранить чистый stock fallback
+- проверить загрузку shell module до активации hook темы
+- подтвердить, что рендер страницы остаётся стабильным после injection patch
+- протестировать fallback ассетов, когда пользовательский ресурс недоступен
+- держать все неподдерживаемые профили прошивки в fallback mode

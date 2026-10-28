@@ -1,64 +1,69 @@
-# Asset specification
+# Архитектура и runtime-модель
 
-## Purpose
+## Цели
 
-Define the structure of a custom asset pack for the PS5-inspired LiveArea theme.
+Runtime-архитектура должна разделять:
+- логику совместимости с прошивкой
+- состояние темы и UI-стиля
+- загрузку ассетов
+- управление shell patch'ами
+- поведение fallback
 
-## Required asset categories
+## Основные компоненты
 
-### 1. Backgrounds
-- page background base
-- folder background variations
-- app page overlays
-- ambient glow textures
+### 1. Compatibility manager
 
-### 2. Panels and overlays
-- translucent glass panels
-- focus frame overlays
-- selected state masks
-- folder highlight shapes
+Обязанности:
+- определить активный профиль прошивки
+- распознавать идентификаторы модулей и размеры text segment
+- проверять корректность мест патчей
+- безопасно отклонять неподдерживаемые сборки
 
-### 3. Icons and masks
-- app icon overlays
-- selected icon masks
-- folder icon variants
-- neutral default fallback icons
+### 2. Theme runtime
 
-### 4. Typography and labels
-- label color metadata
-- selected vs unselected text styles
-- optional font overrides
+Обязанности:
+- хранить текущее состояние темы
+- определять активный стиль: default, neon, glass
+- хранить переключатели для dynamic background, custom icons, focus ring и т.д.
+- предоставлять runtime-значения для render-кода
 
-## Asset pack format
+### 3. Asset loader
 
-A simple pack layout could be:
+Обязанности:
+- загружать кастомные фоновые изображения, overlay, masks и metadata текстур
+- валидировать необходимые ресурсы до активации
+- переходить на stock resources при отсутствии данных
 
-```text
-assets/
-  default/
-    backgrounds/
-    overlays/
-    icons/
-    metadata.json
-  fallback/
-    stock/
-```
+### 4. Shell patch manager
 
-## Metadata example
+Обязанности:
+- проверять target patch перед инъекцией
+- держать injection обратимым
+- освобождать патчи при остановке или сбое
+- обеспечивать минимальный fail-safe путь к stock UI
 
-```json
-{
-  "theme": "vita-ps5-livearea",
-  "version": "0.1.0",
-  "style": "neon-glass",
-  "fallback": "stock-livearea",
-  "requires": ["background", "overlay", "icons"],
-  "supported_firmware": ["3.60", "3.65", "3.73"]
-}
-```
+### 5. Theme render layer
 
-## Fallback rules
+Обязанности:
+- собирать кастомный UI поверх LiveArea
+- применять PS5-подобные цвета и фоны
+- адаптироваться к focus state и выбору иконки
+- оставлять базовый shell layout без изменений, пока безопасный hook не подтверждён
 
-- if required files are missing, use stock LiveArea assets
-- if a firmware is unsupported, disable custom packs immediately
-- if asset memory is too large, reduce texture resolution before failover
+## Жизненный цикл
+
+1. Module start
+2. Инициализация runtime со стандартными безопасными настройками
+3. Определение профиля прошивки
+4. Валидация asset pack
+5. Проверка патча и активация hook
+6. Активная кастомная тема LiveArea
+7. Module stop освобождает все ресурсы темы и hook'и
+
+## Правила безопасности
+
+- если совместимость не доказана, использовать stock UI
+- патчить только после успешной валидации
+- никогда не предполагать, что один профиль прошивки подходит для всех сборок
+- держать fallback code активным всегда
+- логировать несовместимость и чисто отключать тему

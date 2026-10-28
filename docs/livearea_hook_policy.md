@@ -1,75 +1,75 @@
-# Hook policy for LiveArea safety review
+# Матрица кандидатов hook для review безопасности LiveArea
 
-## Goal
+## Цель
 
-The project must not apply any LiveArea visual override until the candidate hook passes a strict policy gate. This follows the same fail-closed model described in the reference release:
+До любого реального переопределения UI каждый кандидат рендера LiveArea должен быть проверен по правилам fail-closed, используемым в `livearea_nolimits` v2.1.0:
 
-- https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
+- прошивка валидирована
+- hook должен быть обратим
+- hook должен быть изолирован
+- fallback должен оставаться активным
+- высокорисковые пути остаются заблокированными
 
-## Policy rules
+## Матрица кандидатов
 
-A candidate hook is allowed only if all of the following are true:
+| Имя | Категория | Риск | Прошивка проверена | Обратим | Изолирован | Безопасен | Вердикт |
+|------|-----------|------|-------------------|---------|-----------|-----------|--------|
+| panel_background_redraw | background | low | no | no | no | no | blocked |
+| selected_icon_glow | highlight | low | no | no | no | no | blocked |
+| glass_overlay_layer | overlay | medium | no | no | no | no | blocked |
+| icon_mask_alpha | icon rendering | medium | no | no | no | no | blocked |
+| text_color_application | text | low | no | no | no | no | blocked |
+| layout_spacing_override | layout | medium | no | no | no | no | blocked |
+| full_livearea_redraw | shell layout | high | no | no | no | no | blocked |
+| global_page_lifecycle_patch | shell lifecycle | high | no | no | no | no | blocked |
 
-- firmware has been checked
-- risk is not high
-- hook is reversible
-- hook is isolated to a local render path
-- hook is considered safe
-- fallback remains active
+## Политика риска
 
-If any condition fails, the hook must remain blocked.
+### Low risk
 
-## Policy states
+Подходит для исследования только при выполнении всех условий:
 
-- `HOOK_POLICY_BLOCKED` — unsafe or unverified
-- `HOOK_POLICY_REVIEW` — candidate exists, needs validation
-- `HOOK_POLICY_ALLOWED` — validated and safe to activate
+- локальный widget / rendering path
+- отсутствие глобального влияния на shell
+- обратимый in-place patch или override
+- доступен безопасный fallback
 
-## Initial candidate set
+Примеры:
+- подсветка выбранного элемента
+- цвет текста локального элемента
+- неглобальное оформление фона
 
-The first review candidates should be limited to local and isolated visual elements:
+### Medium risk
 
-- selected_icon_glow
-- text_color_application
-- panel_background_frost
-- icon_mask_alpha
-- widget_glass_overlay
-- local_list_item_theme
+Требует более глубокой проверки до активации:
 
-## Hard-blocked candidates
+- стеклянные overlay эффекты
+- маски/icon alpha pass
+- локальные tweaks spacing layout
 
-The following are explicitly blocked until proven safe:
+Hook среднего риска не блокируются автоматически, но требуют явной проверки прошивки и доказательства полной обратимости.
 
-- full_livearea_redraw
-- global_page_lifecycle_patch
-- global_layout_composition_patch
-- any shell-wide state mutation
-- any patch touching shared UI containers without a rollback path
+### High risk
 
-## Evaluation logic
+Всегда блокируются до доказательства безопасности.
 
-The policy should reject a hook when:
+Примеры:
+- полный redraw LiveArea
+- патч жизненного цикла shell
+- замена глобального render object
+- всё, что изменяет общее состояние layout между страницами
 
-```c
-if (policy->risk == 2)
-    return -1;
+## Обязательные проверки перед активацией любого hook
 
-if (!policy->firmware_checked)
-    return -1;
+1. совместимость прошивки подтверждена
+2. модуль shell совместим
+3. hook изолирован до одного компонента
+4. stock UI может быть восстановлен без reset
+5. отсутствует глобальное повреждение визуального состояния
+6. путь fallback остаётся активным
 
-if (!policy->reversible)
-    return -1;
+## Текущий статус
 
-if (!policy->isolated)
-    return -1;
+Эта матрица — список review, а не список активации. В данный момент ни один кандидат не считается безопасным для реального patching.
 
-if (!policy->safe)
-    return -1;
-```
-
-## Safe activation model
-
-Only after a candidate clears the policy gate may it enter the enabled stage.
-A hook must still remain under fallback control at all times.
-
-This policy exists to prevent unsafe direct modifications to Vita LiveArea state.
+Это правильная стадия для проекта: безопасная каталогизация возможных hook перед реальными изменениями LiveArea.

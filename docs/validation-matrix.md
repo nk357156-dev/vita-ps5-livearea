@@ -1,41 +1,58 @@
-# Validation matrix
+# Протокол тестирования и валидации
 
-## Priority validation set
+## Цель
 
-The first pass should target a small, stable set of firmware profiles:
+Определить безопасный процесс проверки кастомных UI hook без повреждения shell Vita.
 
-- Retail PS Vita 3.60
-- Retail PS Vita 3.65
-- Retail PS Vita 3.73
-- PSTV 3.74 (if available)
+## Фазы валидации
 
-## Secondary validation set
+### Фаза 1: статическая валидация
+- проверить идентичность модуля
+- проверить размер text segment
+- подтвердить, что точки hook не выходят за допустимый диапазон
+- проверить metadata patch и условия fallback
 
-After the first stable render path is validated:
-- Retail PS Vita 3.61
-- Retail PS Vita 3.68
-- Devkit 3.70
-- Testkit 3.72
+### Фаза 2: валидация stock fallback
+- включить theme engine с fallback mode on
+- убедиться, что stock UI остаётся видимым, если внедрение темы невозможно
 
-## Validation checks
+### Фаза 3: минимальная визуальная активация
+- использовать один известный рабочий профиль прошивки
+- включать только один UI-компонент за раз
+- проверять рендер страницы и выбор иконки
 
-For each target firmware profile, validate:
-- module identification succeeds
-- shell text segment matches expected size
-- patch injection is accepted
-- stock fallback remains present
-- LiveArea still loads after custom hook activation
-- app list and folder rendering remain stable
-- icon focus and selection behavior remains stable
+### Фаза 4: расширенная валидация
+- валидировать на второй профиль прошивки
+- сравнить поведение без сбоев и стабильность layout
+- только после этого расширять на дополнительные классы оборудования
 
-## Pass criteria
+## Чек-лист тестирования
 
-A firmware profile passes only if:
-- the module loads without crashing
-- the LiveArea page renders without distorted or missing UI
-- the plugin can disable cleanly
-- the fallback path preserves stock appearance when the theme cannot apply
+Перед каждым тестом:
+- [ ] подтвердить, что модуль загружен
+- [ ] подтвердить, что stock UI доступен как fallback
+- [ ] подтвердить, что логи активны
+- [ ] подтвердить, что custom asset pack существует
+- [ ] подтвердить, что не активен неподдерживаемый профиль
 
-## Failure handling
+Во время каждого теста:
+- [ ] открыть LiveArea
+- [ ] перемещаться по страницам
+- [ ] открывать папки
+- [ ] фокусироваться и выделять иконки
+- [ ] убедиться, что нет визуального повреждения или падений
 
-Any failure in the above checks should immediately revert to stock UI and log the exact incompatibility point.
+Критерии прохождения:
+- нет падения
+- нет повреждения композиции страницы
+- нет пропавших app tiles
+- нет некорректного состояния выбора
+- stock UI остаётся доступен, если тема отключена
+
+## Политика отказа
+
+Любое визуальное повреждение, падение модуля или сбой рендера должны немедленно:
+- отключить visual hook
+- вернуть stock UI
+- зафиксировать точную проблему совместимости
+- остановить расширение на другие профили прошивки до исправления

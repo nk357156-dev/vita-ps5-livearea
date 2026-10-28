@@ -1,119 +1,46 @@
-# Safe LiveArea Hook Investigation Protocol
+# Модель профиля прошивки
 
-## Overview
+## Цель
 
-This project follows the fail-closed model used in `livearea_nolimits` v2.1.0:
+Создать простую, зависящую от прошивки модель выбора UI-поведения без предположения, что все сборки Vita ведут себя одинаково.
 
-- validate firmware compatibility first
-- validate theme profile second
-- validate asset metadata third
-- activate custom UI only after all checks pass
-- immediately switch to stock LiveArea if any validation fails
+## Структура модели профиля
 
-This is a safety-first design. We do not patch LiveArea directly until the hook is validated and proven reversible.
+Каждый профиль должен включать:
+- версию прошивки
+- класс железа (retail, PSTV, testkit, devkit)
+- module NID
+- ожидаемый размер text segment
+- состояние валидации
+- статус совместимости patch
+- включён/выключен fallback
 
-## Core safety rules
-
-1. Never patch LiveArea before compatibility validation succeeds.
-2. Never assume a firmware profile is valid without module NID and shell checks.
-3. Never enable custom theme if JSON profile or metadata are invalid.
-4. Never keep custom rendering active if a patch cannot be safely reverted.
-5. If any check fails, fallback to default stock LiveArea immediately.
-
-## Investigation stages
-
-### Stage 1: identify candidate render points
-
-Potential safe candidate points include:
-
-- panel backgrounds
-- selected item highlight
-- widget glass overlays
-- icon mask rendering
-- background layer compositing
-- text color application
-- layout spacing / margins
-
-### Stage 2: classify candidate by risk
-
-Each render point must be classified as one of:
-
-- low risk: isolated visual layer, no global state changes
-- medium risk: affects layout but remains local to one widget
-- high risk: global shell state, page lifecycle, memory layout changes
-
-Only low-risk or medium-risk locations may be considered for custom override.
-High-risk points remain off-limits until further validation.
-
-### Stage 3: validate reversibility
-
-For every candidate point we must confirm:
-
-- original bytes or state can be restored
-- override is isolated to the target object
-- fallback can restore stock UI without restart
-- disabling the override does not corrupt the rest of the shell
-
-### Stage 4: validate firmware assumptions
-
-Before patching, confirm:
-
-- supported firmware profile
-- matching shell module build
-- compatible memory layout assumptions
-- no unsupported SceShell variant
-
-### Stage 5: apply protected override only after the guard passes
-
-Only after all validation passes should a hook be activated.
-
-Pseudo-flow:
+## Пример модели
 
 ```c
-if (!firmware_profile_supported()) {
-    fallback_to_stock_livearea();
-    return;
-}
-
-if (!theme_runtime_valid()) {
-    fallback_to_stock_livearea();
-    return;
-}
-
-if (!hook_is_safe()) {
-    fallback_to_stock_livearea();
-    return;
-}
-
-apply_safe_override();
+typedef struct FirmwareProfile {
+    const char *name;
+    uint32_t firmware_version;
+    uint32_t module_nid;
+    uint32_t expected_text_size;
+    int supports_theme_engine;
+    int supports_custom_assets;
+    int requires_fallback;
+} FirmwareProfile;
 ```
 
-## Fallback policy
+## Рекомендуемый порядок профилей
 
-Fallback is mandatory.
+Использовать такой порядок при тестировании:
+1. retail 3.60
+2. retail 3.65
+3. retail 3.73
+4. PSTV 3.74, если доступно
+5. devkit/testkit профили позже
 
-When a hook fails validation, the project must:
+## Правила
 
-- disable the active custom theme
-- restore stock LiveArea
-- keep the shell stable
-- log the failure reason
-
-Fallback is not optional. The project is intentionally designed to fail closed.
-
-## Logging requirements
-
-Every stage of validation should log:
-
-- selected firmware profile
-- selected theme profile
-- metadata validation result
-- hook validation result
-- fallback trigger reason
-
-## Current project status
-
-The project currently has the runtime-safe bootstrap layer and profile validation logic in place.
-The actual shell patching stage remains intentionally deferred until the valid hook investigation protocol is satisfied.
-
-This is the correct engineering direction because the Vita shell is firmware-dependent and not all render paths are safe for direct override.
+- один неподдерживаемый профиль не должен блокировать все остальные
+- одного известного рабочего профиля достаточно как baseline milestone
+- неподдерживаемые профили используют только stock theme rendering
+- держать модель явной и легко расширяемой

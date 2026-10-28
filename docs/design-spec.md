@@ -1,56 +1,116 @@
-# PS5-inspired design specification
+# Отчёт по валидации кандидатов для Vita LiveArea
 
-## Visual direction
+## Цель
 
-The project aims to create a PS5-inspired LiveArea style without breaking the underlying Vita shell behavior.
+Этот документ — первая серьёзная проверка кандидатов для кастомного override в LiveArea. Он следует fail-closed архитектуре, описанной в reference release:
 
-## Core color palette
+- https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
 
-- Background base: very dark charcoal / near black
-- Accent primary: PS5 blue / cyan glow
-- Accent secondary: soft white-blue highlight
-- Panel fill: glass-like dark slate
-- Focus ring: bright cyan-on-black
-- Text primary: near-white
-- Text secondary: soft gray-blue
-- Danger / warning: muted amber for fallback states
+Цель состоит не в том, чтобы слепо патчить shell. Цель — проверить, что candidate hook:
 
-## Surface treatment
+- совместим с текущим профилем прошивки
+- изолирован в локальном визуальном слое
+- обратим без перезагрузки или ручной очистки shell
+- безопасен при политике fallback
 
-- layered translucent panels
-- subtle gradients with low-opacity blur-like transitions
-- soft glow around selected app tiles
-- clean icon spacing and density preservation
-- dark-to-glow transitions that mimic PS5 interface depth
+## Модель валидации
 
-## Layout rules
+Кандидат допустим только если выполнены все условия:
 
-- maintain Vita page geometry and icon hitboxes
-- avoid major reflow of app positions unless a higher-level shell hook is fully validated
-- preserve readability and remain consistent with stock Vita UI behavior
-- keep focus states legible even when a custom theme uses darker surfaces
+- firmware_checked == 1
+- risk != high
+- reversible == 1
+- isolated == 1
+- safe == 1
+- fallback_active == 1
 
-## Icon treatment
+Любое отсутствующее условие автоматически помечает кандидат как `BLOCKED`.
 
-- use high-contrast edges for selected icons
-- apply glows lightly to avoid over-saturation
-- maintain a consistent visual weight across folders and apps
-- allow fallback to stock icons when custom assets are unavailable
+## Таблица кандидатов
 
-## Motion guidance
+| Кандидат | Категория | Риск | Область прошивки | Обратимость | Изолирован | Вердикт |
+|---------|-----------|------|------------------|-------------|------------|--------|
+| selected_icon_glow | подсветка выбранного элемента | low | локальный widget | yes | yes | REVIEW |
+| text_color_application | рендер текста | low | локальный widget | yes | yes | REVIEW |
+| panel_background_frost | layer фона | medium | локальная панель | yes | yes | REVIEW |
+| icon_mask_alpha | рендер иконки | medium | локальный объект иконки | yes | yes | REVIEW |
+| widget_glass_overlay | overlay | medium | локальный widget | likely | yes | REVIEW |
+| full_livearea_redraw | layout shell | high | global | no | no | BLOCKED |
+| global_page_lifecycle_patch | lifecycle shell | high | global | no | no | BLOCKED |
+| global_layout_composition_patch | layout system | high | global | no | no | BLOCKED |
+| shared_shell_state_mutation | состояние shell | high | global | no | no | BLOCKED |
 
-- gentle fade on page transitions
-- subtle glow pulse for selected items
-- minimal motion to avoid disrupting Vita responsiveness
+## Выбор первого кандидата
 
-## Fallback behavior
+Первым реальным кандидатом для валидации выбран:
 
-If a custom asset or patch cannot be validated:
-- revert to stock LiveArea appearance
-- leave default icon layout unchanged
-- disable tutorial or animation overlays
-- retain safe shell behavior before theme styling
+- `selected_icon_glow`
 
-## Design principle
+Причина:
+- визуальная область локальна для выбранного элемента
+- не требуется мутация глобального shell-state
+- вероятно обратим с помощью кэшированного исходного цвета или прямого restore pass
+- fallback path может восстановить стандартные цвета выбора без сброса shell
 
-The theme should feel “PS5-inspired,” not “PS5-recreated.” The goal is to respect Vita constraints while integrating the core visual language of PS5.
+## Чек-лист валидации для первого кандидата
+
+### 1. Валидация прошивки
+- подтвердить, что активный профиль прошивки соответствует профилю кандидата
+- отклонить кандидат при несовместимой прошивке или неподдерживаемой сборке shell
+- проверить отсутствие предположений о глобальном shell
+
+### 2. Валидация изоляции
+- подтвердить, что кандидат влияет только на состояние подсветки выбранного элемента
+- подтвердить, что не перезаписывается общий глобальный render object
+- подтвердить, что не требуется hook жизненного цикла страницы
+
+### 3. Валидация обратимости
+- сохранить исходный цвет селектора, alpha и состояние свечения
+- реализовать path восстановления к исходным значениям
+- проверить path восстановления при срабатывании fallback
+
+### 4. Валидация fallback
+- активировать fallback в тесте
+- проверить, что стандартная подсветка выбора возвращается сразу
+- проверить, что ghost state не остаётся в shell
+
+### 5. Валидация безопасности
+- тестировать через debug-only toggle
+- отклонить кандидат, если артефакт виден у соседних элементов
+- отклонить, если состояние renderer не изолировано
+
+## Hard blockers
+
+Следующие кандидаты остаются заблокированными до доказательства безопасности:
+
+- full_livearea_redraw
+- global_page_lifecycle_patch
+- global_layout_composition_patch
+- любой patch, меняющий общие глобальные значения shell
+
+Они считаются небезопасными, потому что меняют системный layout или runtime state вне одного виджета или визуального слоя.
+
+## Decision gate
+
+Кандидат может перейти из `REVIEW` в `ALLOWED` только после прохождения всех проверок:
+
+1. проверка профиля прошивки завершилась успешно
+2. визуальная область подтверждена как локальная
+3. restore path реализован и протестирован
+4. fallback восстановил stock state
+5. не было замечено глобальных артефактов shell
+
+Без этого доказательства кандидат остаётся в состоянии `REVIEW` или `BLOCKED`.
+
+## Текущий результат проекта
+
+На текущий момент проект имеет реальный pipeline валидации и конкретный первый кандидат для тестирования, а не просто общий архитектурный документ.
+
+Это первый серьёзный milestone, потому что у проекта есть:
+
+- упорядоченный по риску набор кандидатов
+- выбран первый кандидат
+- явные критерии безопасности
+- модель валидации с приоритетом fallback
+
+Проект всё ещё намеренно консервативен и безопасен. Это правильная инженерная позиция для модификации Vita LiveArea.

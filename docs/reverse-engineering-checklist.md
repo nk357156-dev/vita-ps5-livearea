@@ -1,49 +1,82 @@
-# Reverse-engineering checklist
+# План reverse engineering и реализации
 
-## Objective
+## 1. Исходная точка
 
-Confirm which shell and PAF drawing structures are responsible for the LiveArea visual composition before applying theme overrides.
+Существующий проект `livearea_nolimits` — хороший baseline для понимания, как работает patching Vita shell:
+- он валидирует identity shell module
+- находит правильный text segment
+- применяет firmware-specific patches через `taiInjectData`
+- поддерживает compatibility profiles для нескольких версий прошивки
 
-## Checklist
+Этот проект должен переиспользовать общую структуру, но ориентироваться на visual rendering вместо ограничений счётчиков.
 
-### A. Module identification
-- [ ] Confirm the base `SceShell` module is loaded
-- [ ] Record module NID for each supported firmware
-- [ ] Validate segment 0 text layout and size
-- [ ] Check module identity differences between retail and dev/test builds
+## 2. Что нужно reverse-engineer'ить
 
-### B. LiveArea entry points
-- [ ] Locate page and folder render flow
-- [ ] Identify the function that builds icon placements
-- [ ] Identify functions responsible for background composition
-- [ ] Identify focus/selection rendering routines
+Нужно определить shell-элементы, используемые для рендера LiveArea pages:
+- page background
+- layout контейнеров иконок
+- page text labels
+- focus/highlight overlays
+- composition folder view
+- behavior scroll и transitions
 
-### C. Rendering resource references
-- [ ] Map image resources used by page panels
-- [ ] Identify asset loading path for app icons and folder art
-- [ ] Locate handle/resource IDs for overlay textures
-- [ ] Confirm whether fonts or text style data are embedded or loaded dynamically
+На практике это означает трассировку:
+- memory layout `SceShell`
+- PAF UI widgets, используемых LiveArea
+- загрузки и кэширования изображений иконок
+- функций, которые компонуют page elements и overlays
 
-### D. Hook placement strategy
-- [ ] Identify minimal override points for page background replacements
-- [ ] Identify minimal override points for icon frame overlays
-- [ ] Identify a safe place to add glow or focus ring rendering
-- [ ] Ensure all hooks are reversible
+## 3. Вероятный технический путь
 
-### E. Safety validation
-- [ ] Test with stock fallback enabled
-- [ ] Confirm no crash on folder navigation
-- [ ] Confirm no broken icon placement after app list updates
-- [ ] Re-test on a second supported firmware build
+### Фаза A — baseline hook discovery
+- найти модуль `SceShell`
+- определить livearea text segment и module NID
+- проверить профиль прошивки и offsets
+- сформировать минимальный framework injection patch
 
-## Minimal evidence required before visual patching
+### Фаза B — points рисования UI
+- найти функции композиции страницы
+- захватить или disassemble rendering calls
+- определить структуры background и icon overlay
+- определить resources текста и hitboxes
 
-Before applying any live UI changes, the project should have:
-- valid module NID and text segment verification
-- at least one confirmed LiveArea render location
-- one safe fallback branch
-- one firmware-specific success case
+### Фаза C — кастомный слой стиля
+- заменить или переопределить данные цвета для UI surface
+- заменить background textures или overlays
+- скорректировать highlight/focus state rendering
+- построить стратегию asset fallback для неподдерживаемых прошивок
 
-## Completion rule
+### Фаза D — runtime safety
+- обеспечить обратимость patching
+- избегать разрушения логики обновления иконок и страницы
+- поддерживать fallback к stock UI на неподдерживаемых layouts модулей
 
-The visual patching task is not “done” until the theme has been tested without breaking page rendering, app listing, or app startup flow.
+## 4. Стратегия ассетов
+
+Использовать layered asset model:
+- base background textures
+- accent overlays
+- icon masks
+- focus glow textures
+- custom fonts или text style data
+
+Система ассетов должна поддерживать:
+- default stock fallback
+- кастомные PS5-like packs
+- per-firmware compatibility profiles
+
+## 5. Workflow валидации
+
+1. Валидировать identification модуля и структуру shell text
+2. Подтвердить page drawing hooks до injection любого visual override
+3. Протестировать минимальное изменение темы на одной прошивке
+4. Расширять на больший набор прошивок только после стабильности UI hook
+
+## 6. Оценка риска
+
+Это проект с высоким риском, потому что:
+- shell Vita завязан на прошивку
+- композиция UI shell тесно связана с memory layout
+- неправильный patching способен ломать boot или render LiveArea
+
+Самый безопасный путь — начинать с одного хорошо понятного профиля прошивки и держать все остальные сборки как fallback-only targets.

@@ -1,44 +1,75 @@
-# Project charter
+# Политика hook для проверки безопасности LiveArea
 
-## Project name
+## Цель
 
-`vita-ps5-livearea`
+Проект не должен применять никакое визуальное переопределение LiveArea до тех пор, пока candidate hook не пройдёт строгий policy gate. Это следует той же модели fail-closed, описанной в reference release:
 
-## Objective
+- https://github.com/devnoname120/livearea_nolimits/releases/tag/v2.1.0
 
-Design and prototype a PS5-inspired LiveArea theme for the PlayStation Vita while maintaining a safe, firmware-aware, and reversible implementation path.
+## Правила политики
 
-## Non-objectives
+Candidate hook допустим только если выполнены все условия:
 
-This project does not aim to:
-- fork or replace `livearea_nolimits` functionality
-- turn the Vita into a PS5 shell
-- assume all firmware builds are compatible without validation
-- ship a theme without a fallback strategy
+- прошивка была проверена
+- риск не является высоким
+- hook обратим
+- hook изолирован в локальном пути рендера
+- hook считается безопасным
+- fallback остаётся активным
 
-## Success criteria
+Если какое-либо условие не выполнено, hook должен оставаться заблокированным.
 
-The project is successful when:
-- the custom theme can be enabled safely on at least one supported firmware profile
-- the system can revert to stock LiveArea when a profile is unsupported
-- the UI remains stable during navigation, folder access, and icon focus
-- the design matches the intended PS5-inspired design language without breaking shell behavior
+## Состояния политики
 
-## Risk factors
+- `HOOK_POLICY_BLOCKED` — небезопасно или не проверено
+- `HOOK_POLICY_REVIEW` — кандидат существует, требуется валидация
+- `HOOK_POLICY_ALLOWED` — валидирован и безопасен для активации
 
-- firmware-specific offsets
-- unknown UI rendering entry points
-- shell layout differences across Vita revisions
-- asset pipeline limitations
-- broken rendering or boot issues if patches are incorrect
+## Начальный набор кандидатов
 
-## Constraints
+Первые кандидаты для review должны быть ограничены локальными и изолированными визуальными элементами:
 
-- must keep a fallback path to stock LiveArea
-- must avoid irreversible shell modifications
-- must respect VitaSDK build workflow and module rules
-- must be validated on a narrow, known set of firmware profiles first
+- selected_icon_glow
+- text_color_application
+- panel_background_frost
+- icon_mask_alpha
+- widget_glass_overlay
+- local_list_item_theme
 
-## Ownership
+## Hard-blocked кандидаты
 
-This project is an engineering research project with explicit emphasis on safe experimentation and compatibility validation.
+Следующие явно заблокированы до доказательства безопасности:
+
+- full_livearea_redraw
+- global_page_lifecycle_patch
+- global_layout_composition_patch
+- любая мутация shell-wide state
+- любой patch, затрагивающий общие UI-контейнеры без пути отката
+
+## Логика оценки
+
+Политика должна отклонять hook, когда:
+
+```c
+if (policy->risk == 2)
+    return -1;
+
+if (!policy->firmware_checked)
+    return -1;
+
+if (!policy->reversible)
+    return -1;
+
+if (!policy->isolated)
+    return -1;
+
+if (!policy->safe)
+    return -1;
+```
+
+## Модель безопасной активации
+
+Только после того, как кандидат проходит policy gate, он может войти в активную стадию.
+Hook всё равно должен оставаться под контролем fallback.
+
+Эта политика существует, чтобы предотвратить небезопасные прямые изменения состояния Vita LiveArea.

@@ -1,18 +1,44 @@
-# Project structure
+# Устав проекта
 
-This project intentionally starts as a clean plugin scaffold, separate from the existing `livearea_nolimits` plugin.
+## Название проекта
 
-## Directories
+`vita-ps5-livearea`
 
-- `src/` — core source code
-- `include/` — public headers
-- `assets/` — UI resources and placeholders
-- `docs/` — notes and plans
-- `tests/` — validation scripts and smoke tests
+## Цель
 
-## Key sources
+Разработать и прототипировать PS5-inspired LiveArea тему для PlayStation Vita при сохранении безопасного, зависящего от прошивки и обратимого пути реализации.
 
-- `src/main.c` — module entry points
-- `src/theme_patch.c` — shell patching logic and theme hooks
-- `src/asset_loader.c` — asset and resource loading
-- `src/patch_bytes.S` — patch injection helpers
+## Вне целей проекта
+
+Этот проект не ставит целью:
+- форкнуть или заменить функциональность `livearea_nolimits`
+- сделать Vita shell, полностью похожим на PS5
+- считать все сборки прошивки совместимыми без проверки
+- выпускать тему без стратегии fallback
+
+## Критерии успеха
+
+Проект считается успешным, когда:
+- кастомная тема может быть безопасно включена хотя бы на одном поддерживаемом профиле прошивки
+- система может откатиться к stock LiveArea, когда профиль неподдерживается
+- UI остаётся стабильным при навигации, доступе к папкам и фокусе иконок
+- дизайн соответствует ожидаемому PS5-inspired стилю без разрушения поведения shell
+
+## Факторы риска
+
+- смещения, зависящие от прошивки
+- неизвестные точки входа рендера UI
+- различия layout shell между ревизиями Vita
+- ограничения pipeline ассетов
+- повреждение рендера или boot issues при неверных patch'ах
+
+## Ограничения
+
+- должен сохранять path к stock LiveArea
+- должен избегать необратимых изменений shell
+- должен соблюдать workflow сборки VitaSDK и правила модулей
+- должен быть валидирован на узком, известном наборе профилей прошивки в первую очередь
+
+## Владение проектом
+
+Это инженерный исследовательский проект с явным акцентом на безопасное экспериментирование и валидацию совместимости.

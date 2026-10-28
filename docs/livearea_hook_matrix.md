@@ -1,75 +1,119 @@
-# Hook candidate matrix for LiveArea safety review
+# Протокол безопасного исследования LiveArea hook
 
-## Goal
+## Обзор
 
-Before any real UI override is applied, each LiveArea render candidate must be reviewed against the fail-closed rules used in `livearea_nolimits` v2.1.0:
+Этот проект следует fail-closed модели, используемой в `livearea_nolimits` v2.1.0:
 
-- firmware validated
-- hook must be reversible
-- hook must be isolated
-- fallback must remain active
-- high-risk paths remain blocked
+- сначала валидировать совместимость прошивки
+- затем валидировать профиль темы
+- затем валидировать metadata ассетов
+- активировать кастомный UI только после успешной проверки всех условий
+- немедленно перейти к stock LiveArea, если любая проверка не пройдена
 
-## Candidate matrix
+Это безопасность прежде всего. Мы не патчим LiveArea напрямую, пока hook не валидирован и не доказана его обратимость.
 
-| Name | Category | Risk | Firmware checked | Reversible | Isolated | Safe | Verdict |
-|------|----------|------|------------------|-----------|----------|------|---------|
-| panel_background_redraw | background | low | no | no | no | no | blocked |
-| selected_icon_glow | highlight | low | no | no | no | no | blocked |
-| glass_overlay_layer | overlay | medium | no | no | no | no | blocked |
-| icon_mask_alpha | icon rendering | medium | no | no | no | no | blocked |
-| text_color_application | text | low | no | no | no | no | blocked |
-| layout_spacing_override | layout | medium | no | no | no | no | blocked |
-| full_livearea_redraw | shell layout | high | no | no | no | no | blocked |
-| global_page_lifecycle_patch | shell lifecycle | high | no | no | no | no | blocked |
+## Основные правила безопасности
 
-## Risk policy
+1. Не патчить LiveArea до успешной валидации совместимости.
+2. Не предполагать, что профиль прошивки валиден без module NID и shell checks.
+3. Не включать кастомную тему, если JSON-профиль или metadata невалидны.
+4. Не держать кастомный рендер активным, если patch нельзя безопасно откатить.
+5. Если любая проверка не пройдена, сразу перевести в fallback на stock LiveArea.
 
-### Low risk
+## Этапы исследования
 
-Suitable for investigation only when all of the following are true:
+### Этап 1: идентификация кандидатов точек рендера
 
-- local widget / rendering path
-- no global shell impact
-- reversible in-place patch or override
-- safe fallback available
+Потенциально безопасные candidate points включают:
 
-Examples:
-- selected item highlight overlay
-- text color for a local element
-- non-global background styling
+- фон панелей
+- подсветку выбранного элемента
+- glass overlay виджетов
+- рендер icon mask
+- композицию background layer
+- применение цвета текста
+- spacing layout / margins
 
-### Medium risk
+### Этап 2: классификация кандидата по риску
 
-Requires deeper validation before activation:
+Каждая точка рендера должна классифицироваться как одна из:
 
-- glass overlay effects
-- icon mask / alpha pass
-- layout-local spacing tweaks
+- low risk: изолированный визуальный layer, без глобальных изменений состояния
+- medium risk: влияет на layout, но остаётся локальной для одного виджета
+- high risk: глобальное состояние shell, lifecycle страницы, изменение memory layout
 
-Medium-risk hooks are not blocked automatically, but they require explicit firmware verification and full reversibility proof.
+Только low-risk или medium-risk локации могут рассматриваться для кастомного override.
+High-risk точки остаются вне досягаемости до дополнительной валидации.
 
-### High risk
+### Этап 3: проверка обратимости
 
-Always blocked until proven safe.
+Для каждой candidate point мы должны подтвердить:
 
-Examples:
-- full LiveArea redraw
-- shell lifecycle patching
-- global render object replacement
-- anything modifying shared layout state across pages
+- исходные байты или состояние можно восстановить
+- override изолирован для целевого объекта
+- fallback может вернуть stock UI без перезагрузки
+- отключение override не повреждает остальной shell
 
-## Required checks before any hook is allowed
+### Этап 4: проверка предположений по прошивке
 
-1. firmware match validated
-2. shell module compatible
-3. hook isolated to a single component
-4. stock UI can be restored without reset
-5. no global visual state corruption
-6. fallback path remains live
+Перед patching подтвердить:
 
-## Current status
+- поддерживаемый профиль прошивки
+- соответствующая сборка shell module
+- совместимые предположения по memory layout
+- отсутствие неподдерживаемого варианта SceShell
 
-This matrix is a review list, not an activation list. At the moment, no candidate is considered safe for actual patching.
+### Этап 5: применять protected override только после прохождения guard
 
-This is the correct stage for the project: safe cataloging of possible hooks before real LiveArea modifications.
+Только после прохождения всех проверок hook может быть активирован.
+
+Pseudo-flow:
+
+```c
+if (!firmware_profile_supported()) {
+    fallback_to_stock_livearea();
+    return;
+}
+
+if (!theme_runtime_valid()) {
+    fallback_to_stock_livearea();
+    return;
+}
+
+if (!hook_is_safe()) {
+    fallback_to_stock_livearea();
+    return;
+}
+
+apply_safe_override();
+```
+
+## Политика fallback
+
+Fallback обязателен.
+
+Когда hook не проходит валидацию, проект должен:
+
+- отключить активную кастомную тему
+- восстановить stock LiveArea
+- сохранить shell стабильным
+- залогировать причину сбоя
+
+Fallback не является опциональным. Проект намеренно построен по модели fail closed.
+
+## Требования к логированию
+
+Каждый этап валидации должен логировать:
+
+- выбранный профиль прошивки
+- выбранный профиль темы
+- результат валидации metadata
+- результат валидации hook
+- причину срабатывания fallback
+
+## Текущий статус проекта
+
+В настоящее время проект обладает runtime-safe bootstrap layer и логикой валидации профиля.
+Фактическая стадия patching shell намеренно отложена до выполнения протокола безопасного исследования hook.
+
+Это правильное инженерное направление, потому что shell Vita зависит от прошивки и не все пути рендера безопасны для прямого override.

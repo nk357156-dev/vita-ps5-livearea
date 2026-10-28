@@ -1,53 +1,49 @@
-# Roadmap to first successful build
+# Чек-лист reverse engineering
 
-## Milestone 1 — project scaffold
+## Цель
 
-Complete:
-- repo setup
-- module skeleton
-- runtime config
-- patch API stubs
-- docs package
+Подтвердить, какие структуры shell и PAF drawing отвечают за композицию LiveArea перед применением theme overrides.
 
-## Milestone 2 — compatibility layer
+## Чек-лист
 
-Required:
-- firmware profile model
-- module validation flow
-- stock fallback path
-- supported firmware mapping
+### A. Идентификация модуля
+- [ ] Подтвердить, что загружен базовый модуль `SceShell`
+- [ ] Зафиксировать module NID для каждой поддерживаемой прошивки
+- [ ] Проверить layout и размер segment 0 text
+- [ ] Сравнить различия в идентичности модуля между retail и dev/test сборками
 
-## Milestone 3 — shell analysis
+### B. Точки входа LiveArea
+- [ ] Найти flow рендера страницы и папок
+- [ ] Определить функцию, которая строит размещение иконок
+- [ ] Определить функции, ответственные за композицию фона
+- [ ] Определить routines рендера focus/selection
 
-Required:
-- identify LiveArea render path
-- identify background and icon overlay data
-- identify safe hook sites
-- record differences between firmware variants
+### C. Ссылки на ресурсы рендера
+- [ ] Сопоставить image resources, используемые panel'ями страницы
+- [ ] Определить путь загрузки ассетов для app icons и folder art
+- [ ] Найти handle/resource IDs для overlay-текстур
+- [ ] Подтвердить, встроены ли шрифты или данные стиля в код или загружаются динамически
 
-## Milestone 4 — minimal custom theme
+### D. Стратегия размещения hook
+- [ ] Найти минимальные override points для замены фоновых страниц
+- [ ] Найти минимальные override points для overlay frame иконок
+- [ ] Найти безопасное место для добавления glow или focus ring rendering
+- [ ] Убедиться, что все hook обратимы
 
-Required:
-- custom asset pack for backgrounds and overlays
-- simple style selection engine
-- test-only UI overrides
-- fallback branch for unsupported profiles
+### E. Проверка безопасности
+- [ ] Протестировать при включённом stock fallback
+- [ ] Подтвердить отсутствие падений при навигации по папкам
+- [ ] Подтвердить отсутствие нарушений размещения иконок после обновления списка приложений
+- [ ] Повторно протестировать на второй поддерживаемой сборке прошивки
 
-## Milestone 5 — first stable build
+## Минимально необходимое доказательство перед visual patching
 
-Requirements:
-- one known-good firmware profile
-- no shell crash
-- LiveArea remains stable during navigation
-- fallback to stock UI remains available
+Перед применением любых live UI изменений проект должен иметь:
+- валидный NID модуля и проверку text segment
+- хотя бы одну подтверждённую точку рендера LiveArea
+- одну безопасную ветку fallback
+- один успешный сценарий для конкретной прошивки
 
-## Milestone 6 — broader support
+## Правило завершения
 
-Only after milestone 5:
-- add second firmware profile
-- expand to additional hardware classes
-- keep compatibility matrix updated
-
-## Rule
-
-No unsupported firmware profile should be treated as a target until the exact shell offset and patch path has been validated.
+Задача visual patching считается не "завершённой", пока тема не протестирована без повреждения рендера страницы, списка приложений или потока запуска приложений.

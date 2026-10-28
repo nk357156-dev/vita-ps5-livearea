@@ -1,60 +1,56 @@
-# Firmware and validation targets
+# Техническая спецификация дизайна в стиле PS5
 
-## Initial target
+## Визуальное направление
 
-This project will begin with the firmware families referenced by `livearea_nolimits` because they already have validated shell patching patterns.
+Проект направлен на создание PS5-inspired LiveArea стиля без нарушения поведения базового shell Vita.
 
-### Retail PS Vita / PSTV
-- 3.60
-- 3.61
-- 3.63
-- 3.65
-- 3.67
-- 3.68
-- 3.69
-- 3.70
-- 3.71
-- 3.72
-- 3.73
-- 3.74
+## Основная цветовая палитра
 
-### Testkit
-- 3.60
-- 3.61
-- 3.63
-- 3.65
-- 3.67
-- 3.68
-- 3.70
-- 3.72
-- 3.73
+- Фон: очень тёмный уголь / почти чёрный
+- Основной акцент: PS5 blue / cyan glow
+- Вторичный акцент: мягкий бело-синий highlight
+- Заполнение панели: стеклянно-тёмный slate
+- Focus ring: яркий cyan на чёрном фоне
+- Основной текст: почти белый
+- Вторичный текст: мягкий серо-синий
+- Предупреждение / danger: приглушённый amber для состояний fallback
 
-### Devkit
-- 3.60
-- 3.61
-- 3.63
-- 3.65
-- 3.67
-- 3.68
-- 3.69
-- 3.70
-- 3.71
-- 3.73
+## Обработка поверхностей
 
-## Recommended initial validation subset
+- слоистые полупрозрачные панели
+- мягкие градиенты с низкой прозрачностью и blur-подобными переходами
+- мягкое свечение вокруг выбранных app tiles
+- чистые интервалы и плотность иконок
+- переходы dark-to-glow, напоминающие глубину интерфейса PS5
 
-For a first pass, we should validate a minimal set:
-- retail 3.60
-- retail 3.65
-- retail 3.73
-- PSTV 3.74 (if available)
+## Правила layout
 
-This creates a stable baseline while the UI patching layer is still experimental.
+- сохранять геометрию страниц Vita и hitboxes иконок
+- избегать серьёзного изменения положения app, если более высокий shell hook не валидирован полностью
+- сохранять читаемость и оставаться согласованным с поведением stock Vita UI
+- держать focus states читабельными даже при тёмных поверхностях темы
 
-## Validation rules
+## Обработка иконок
 
-- keep a clean stock fallback
-- verify the shell module loads before theme hook activation
-- confirm page rendering remains stable after patch injection
-- test asset fallback when a custom resource is unavailable
-- keep all unsupported firmware profiles in fallback mode
+- использовать высококонтрастные края для выбранных иконок
+- применять glow умеренно, чтобы не перегружать насыщенность
+- поддерживать одинаковую визуальную массу для папок и приложений
+- позволять fallback к stock icons, если кастомные ассеты недоступны
+
+## Руководство по motion
+
+- мягкий fade на переходах страниц
+- небольшое свечение для выбранных элементов
+- минимальная анимация, чтобы не нарушать responsiveness Vita
+
+## Поведение fallback
+
+Если кастомный ассет или patch не могут быть валидированы:
+- откатить к stock LiveArea appearance
+- оставить default layout иконок без изменений
+- отключить tutorial или animation overlay
+- сохранить безопасное поведение shell до начала стилизации темы
+
+## Принцип дизайна
+
+Тема должна ощущаться как "PS5-inspired", не "PS5-recreated". Цель — уважать ограничения Vita и одновременно интегрировать ключевой визуальный язык PS5.
