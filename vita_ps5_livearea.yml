@@ -1,0 +1,14 @@
+# Vita module config for the PS5-inspired LiveArea experiment.
+
+# This is a scaffold and intentionally separate from livearea_nolimits.
+# It allows a custom Vita module to be built and identified as a different project.
+
+# Module metadata
+Title = vita-ps5-livearea
+Author = nk357156-dev
+Version = 0.1.0
+
+# Module entry point
+ModuleType = user
+
+# Shell integration is intentionally left for later firmware-specific patching work.
