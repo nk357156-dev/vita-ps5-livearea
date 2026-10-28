@@ -1,0 +1,23 @@
+{
+  "name": "neon-glass",
+  "style": "neon-glass",
+  "enabled": true,
+  "glass_mode": true,
+  "neon_accent": true,
+  "dynamic_background": false,
+  "custom_icons": true,
+  "ui_scale": 100,
+  "palette": {
+    "bg_base": "0x090B12",
+    "bg_surface": "0x121821",
+    "panel": "0x181F2B",
+    "panel_frost": "0x1E2A3A",
+    "accent_primary": "0x5BC0FF",
+    "accent_secondary": "0x7F9BFF",
+    "glow_cyan": "0x72E5FF",
+    "text_primary": "0xF5F7FB",
+    "text_secondary": "0xB7C2D9",
+    "success": "0x7BE0A0",
+    "warning": "0xFFCC66"
+  }
+}

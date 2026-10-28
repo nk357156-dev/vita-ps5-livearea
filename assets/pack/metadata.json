@@ -1,0 +1,12 @@
+{
+  "theme_name": "vita-ps5-livearea",
+  "version": "0.2.0",
+  "style": "neon-glass",
+  "fallback_mode": "stock-livearea",
+  "fallback_enabled": true,
+  "requires_background": true,
+  "requires_overlays": true,
+  "requires_icons": true,
+  "requires_labels": true,
+  "supported_firmware": ["3.60", "3.65", "3.73"]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "default",
+  "style": "default",
+  "enabled": true,
+  "glass_mode": false,
+  "neon_accent": false,
+  "dynamic_background": false,
+  "custom_icons": false,
+  "ui_scale": 100,
+  "palette": {
+    "bg_base": "0x000000",
+    "bg_surface": "0x101010",
+    "panel": "0x171717",
+    "panel_frost": "0x1F1F1F",
+    "accent_primary": "0xFFFFFF",
+    "accent_secondary": "0xD9D9D9",
+    "glow_cyan": "0x6BD3FF",
+    "text_primary": "0xF5F5F5",
+    "text_secondary": "0xC9C9C9",
+    "success": "0x7BE0A0",
+    "warning": "0xFFCC66"
+  }
+}
