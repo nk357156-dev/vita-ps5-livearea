@@ -1,45 +1,36 @@
 #include <psp2/types.h>
 
-#include "theme.h"
+#include "theme_patch.h"
 
-static VitaThemeConfig g_theme_config;
-
-int theme_config_load_default(VitaThemeConfig *config)
-{
-    if (config == NULL)
-        return -1;
-
-    config->enable_glass_mode = 1;
-    config->enable_neon_accent = 1;
-    config->enable_dynamic_background = 0;
-    config->enable_icon_recolor = 1;
-
-    return 0;
-}
+static int g_patch_active = 0;
 
 int theme_patch_init(void)
 {
-    if (theme_config_load_default(&g_theme_config) < 0)
-        return -1;
-
-    return 0;
+    g_patch_active = 0;
+    return VITA_THEME_PATCH_OK;
 }
 
-int theme_patch_start(void)
+int theme_patch_apply_profile(const VitaThemePatchProfile *profile)
 {
+    if (profile == NULL)
+        return VITA_THEME_PATCH_FAIL;
+
     /*
-     * Placeholder for shell injection and style hooks.
-     * The actual Vita shell patching will be implemented in later stages.
+     * Placeholder implementation.
+     * Real logic should validate the shell module, text segment,
+     * and generate reversible hook injection points.
      */
-    return 0;
+    g_patch_active = 1;
+    return VITA_THEME_PATCH_OK;
 }
 
-int theme_patch_stop(void)
+int theme_patch_release(void)
 {
-    return 0;
+    g_patch_active = 0;
+    return VITA_THEME_PATCH_OK;
 }
 
-void theme_patch_cleanup(void)
+int theme_patch_is_active(void)
 {
-    /* placeholder cleanup */
+    return g_patch_active;
 }
