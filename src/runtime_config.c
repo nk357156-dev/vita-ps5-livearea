@@ -1,5 +1,6 @@
 #include "runtime_config.h"
 
+#include <stdio.h>
 #include <string.h>
 
 int runtime_config_init(RuntimeConfig *config)

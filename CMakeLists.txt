@@ -24,6 +24,9 @@ add_executable(vita_ps5_livearea
     src/asset_loader.c
     src/compat.c
     src/validation_runner.c
+    src/firmware_profile.c
+    src/theme_loader.c
+    src/fallback.c
     src/patch_bytes.S
 )
 

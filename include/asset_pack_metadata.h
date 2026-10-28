@@ -7,7 +7,6 @@
 #define ASSET_PACK_VERSION_MAX 32
 #define ASSET_PACK_STYLE_MAX 24
 #define ASSET_PACK_FIRMWARE_MAX 16
-#define ASSET_PACK_REQUIRED_ASSET_MAX 8
 
 typedef struct AssetPackMetadata {
     char theme_name[ASSET_PACK_NAME_MAX];

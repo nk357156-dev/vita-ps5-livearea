@@ -81,7 +81,7 @@ int validation_runner_validate_metadata(const AssetPackMetadata *metadata, Valid
     if (metadata->supported_firmware_count <= 0) {
         result->ok = 0;
         result->error_count++;
-        snprintf(result->message, sizeof(result->message), "%s", "supported firmwares count is invalid");
+        snprintf(result->message, sizeof(result->message), "%s", "supported firmware count is invalid");
         return -1;
     }
 
