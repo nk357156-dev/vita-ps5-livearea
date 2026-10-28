@@ -12,55 +12,60 @@ PS Vita LiveArea UI project inspired by PS5 design, built as a separate experime
 
 Важно: этот проект не дублирует функциональность `livearea_nolimits`, а использует его подход к проверке прошивки, модульной совместимости и fail-closed runtime логике.
 
-## Серийный результат: validation report
+## Серьёзный milestone: first real hook validation candidate
 
-Доказанная инженерная веха проекта — это не серия “декоративных коммитов”, а документ с карантинной верификацией реальных candidate hook points.
+Первый целевой candidate для реальной верификации — это:
 
-В проекте добавлен документ:
+- `selected_icon_glow`
 
-- `docs/candidate_validation_report.md`
+Документ:
 
-Он содержит:
+- `docs/selected_icon_glow_validation.md`
 
-- список candidate hooks
-- классификацию по уровню риска
-- условия разрешения для safe activation
-- выбранный первый candidate для проверки
-- hard-blocked hooks
-- validation checklist для fallback и reversibility
+Он описывает:
 
-## Hook policy и candidate review
+- risk classification
+- acceptance criteria
+- validation flow
+- revert and fallback requirements
+- hard-blocked candidates
+- current status = `REVIEW`
 
-Перед реальным patching в проекте используется separate policy layer и review matrix:
+## Hook policy and safe review model
+
+Перед реальным patching проект использует policy layer и review matrix:
 
 - `include/livearea_hook_policy.h`
 - `src/livearea_hook_policy.c`
 - `docs/livearea_hook_policy.md`
 - `docs/livearea_hook_matrix.md`
+- `docs/hook_investigation.md`
+- `docs/candidate_validation_report.md`
 
-Это делает проект не “попыткой сломать UI”, а безопасной validation pipeline.
+Это делает архитектуру проекта fail-closed, а не “сразу с patching”.
 
-## First candidate selected for real validation
+## First candidate status
 
-Первый кандидат для реальной проверки:
+`selected_icon_glow` currently remains in `REVIEW` state.
 
-- `selected_icon_glow`
+It is selected because it is the best low-risk local candidate, but it still needs proof of:
 
-Причина выбора:
+- firmware compatibility
+- local-scope safety
+- reversibility
+- fallback restoration
+- no leakage to adjacent elements
 
-- локальная область highlight
-- малая зона влияния
-- минимальный риск нарушения shell state
-- потенциально reversible при restoration path
+This is the correct engineering posture before any actual UI override.
 
 ## Hard-blocked candidates
 
-Следующие кандидаты явно заблокированы и не должны использоваться до дополнительной проверки:
+The following remain blocked until proven safe:
 
 - full_livearea_redraw
 - global_page_lifecycle_patch
 - global_layout_composition_patch
-- any shared shell state mutation
+- shared_shell_state_mutation
 
 ## Fail-closed architecture
 
@@ -74,69 +79,15 @@ PS Vita LiveArea UI project inspired by PS5 design, built as a separate experime
 6. применять кастомный стиль только после успешной валидации
 7. если что-то не прошло — включить стандартный LiveArea
 
-## Текущее состояние проекта
-
-На данный момент проект уже имеет:
-
-- safe runtime bootstrap
-- firmware-aware validation
-- hook matrix
-- hook policy guard
-- explicit blocked candidates
-- a concrete first candidate for validation
-- a serious engineering report before any real UI patching
-
-## Архитектура проекта
-
-- `src/` — исходный код runtime и логики темы
-- `include/` — заголовки и API интерфейсы
-- `assets/` — ассеты, палитры, metadata пакета темы
-- `profiles/` — профили визуальных тем
-- `docs/` — документы по архитектуре, дизайну и валидации
-- `tests/` — скрипты валидации профилей и metadata
-- `CMakeLists.txt` — сборка проекта под VitaSDK
-- `vita_ps5_livearea.yml` — модульные метаданные
-
-## Поддерживаемые firmware
-
-В текущей модели проект ориентируется на семейства прошивок, которые уже были использованы в исследовании:
-
-- Retail PS Vita / PSTV: 3.60–3.74
-- Testkit: 3.60, 3.61, 3.63, 3.65, 3.67, 3.68, 3.70, 3.72, 3.73
-- Devkit: 3.60, 3.61, 3.63, 3.65, 3.67, 3.68, 3.69, 3.70, 3.71, 3.73
-
-## Сборка
-
-Для сборки требуется VitaSDK и CMake.
-
-```sh
-cmake -S . -B build -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
-Результат сборки:
-
-```text
-build/vita_ps5_livearea.suprx
-```
-
-## Важное замечание
-
-Это проект исследовательского характера. Он не обещает готовый PS5 UI для всех прошивок сразу. Реальный визуальный override должен происходить только после безопасной верификации hook point и профиля прошивки.
-
-## Roadmap
-
-1. Проверить и подтвердить `SceShell`-маршруты LiveArea
-2. Найти безопасные точки рендера и хуки
-3. Валидировать совместимость по firmware profile
-4. Загрузить активный theme profile
-5. Проверить metadata и ассеты
-6. Подключить визуальные override только после успешной валидации
-7. Расширять поддержку только на протестированных профилях
-
 ## Итог
 
-Этот проект — безопасная, firmware-aware основа для создания PS5-inspired LiveArea для PS Vita. Он использует подходы, проверенные в `livearea_nolimits`, но сохраняет изоляцию, безопасный fallback и fail-closed runtime logic.
+На данном этапе проект уже имеет:
 
-Если цель — сделать именно кастомный LiveArea в PS5-стиле, этот репозиторий — правильная точка старта.
+- safe runtime bootstrap
+- firmware-aware validation flow
+- hook matrix
+- hook policy layer
+- a concrete first review candidate (`selected_icon_glow`)
+- a clear blocked pool for high-risk global state patches
+
+This is the correct serious engineering stage before actual LiveArea override.
