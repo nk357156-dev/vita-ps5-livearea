@@ -42,6 +42,23 @@ PS Vita LiveArea UI project inspired by PS5 design, built as a separate experime
 
 Протокол описан в `docs/hook_investigation.md`.
 
+## Hook policy layer
+
+Перед реальным patching в проекте используется отдельный policy layer для защиты LiveArea hook candidates.
+
+Он хранит состояние кандидата и не допускает активацию, если:
+
+- риск высокий
+- firmware не проверен
+- hook не обратим
+- hook не изолирован
+- hook не считается безопасным
+
+Политика описана в `docs/livearea_hook_policy.md` и реализована в:
+
+- `include/livearea_hook_policy.h`
+- `src/livearea_hook_policy.c`
+
 ## Hook candidate matrix
 
 Перед реальным патчингом мы формируем матрицу потенциальных hook points и оцениваем их по риску:
@@ -50,7 +67,7 @@ PS Vita LiveArea UI project inspired by PS5 design, built as a separate experime
 - medium risk: local visual layer or layout effect
 - high risk: global shell state or lifecycle patch
 
-Матрица хранится в `docs/livearea_hook_matrix.md` и поддерживается через `include/livearea_hook_matrix.h` / `src/livearea_hook_matrix.c`.
+Матрица хранится в `docs/livearea_hook_matrix.md`.
 
 ## Fail-closed architecture
 
@@ -96,6 +113,7 @@ PS Vita LiveArea UI project inspired by PS5 design, built as a separate experime
 - guard для pre-hook validation
 - протокол безопасного исследования hook points
 - матрица candidate hook points
+- policy layer для safe review hooks
 
 ## Архитектура проекта
 

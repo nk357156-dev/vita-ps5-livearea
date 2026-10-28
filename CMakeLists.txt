@@ -32,6 +32,7 @@ add_executable(vita_ps5_livearea
     src/debug_log.c
     src/livearea_hook_guard.c
     src/livearea_hook_matrix.c
+    src/livearea_hook_policy.c
     src/patch_bytes.S
 )
 
